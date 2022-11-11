@@ -173,6 +173,15 @@ void eval(char *cmdline)
             else if (strcmp(argv[0], "pwd") == 0) {
                 myPwd();
             }
+            // ./ 으로 시작하는 파일 실행
+            else if (argv[0][0] == '.' && argv[0][1] == '/') {
+                char * filename = argv[0] + 2;
+                execv(argv[0], &filename);
+            }
+            else {
+                fprintf(stderr,"%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
         }
 
         /* Parent waits for foreground job to terminate */
