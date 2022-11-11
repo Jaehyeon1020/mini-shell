@@ -1,12 +1,22 @@
 #ifndef _EXECUTABLE_H_
 #define _EXECUTABLE_H_
 
-int myHead(char * option1, char * option2, char * file);
-int myTail(char * option, char * file);
-int myCat(char * file);
-int myCp(char * file1, char * file2);
-int myMv(char * source, char * destination);
-int myRm(char * file);
-int myPwd();
+#define BUF_SIZE 1024
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <errno.h>
+
+void myHead(char * option1, char * option2, char * file);
+void myTail(char * option1, char * option2, char * file);
+void myCat(char * file);
+void myCp(char * source, char * destination);
+void myMv(char * source, char * destination);
+void myRm(char * file);
+void myPwd();
 
 #endif

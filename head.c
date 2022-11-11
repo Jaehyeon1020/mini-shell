@@ -10,14 +10,19 @@
  * option1 : -n
  * option2 : K (몇 줄을 출력할 지)
 */
-int myHead(char * option1, char * option2, char * file) {
+void myHead(char * option1, char * option2, char * file) {
     FILE * fp;
     char buf[BUF_SIZE];
 
-    fp = fopen(file, "r");
+    /* file open: file 없는 경우에는 표준 입력 읽어서 표준 출력으로 출력 */
+    if ((fp = fopen(file, "r")) == NULL) {
+        fgets(buf, BUF_SIZE, stdin);
+        fputs(buf, stdout);
+        return;
+    }
 
-    /* option이 있는 경우 : option 2만큼 라인을 파일의 위에서부터 출력 */
-    if (option1 != NULL && option2 != NULL) {
+    /* option -n이 있는 경우 : option 2만큼 라인을 파일의 위에서부터 출력 */
+    if (strcmp(option1, "-n") == 0 && option2 != NULL) {
         int lineNumberToPrint = atoi(option2);
         
         for (int i = 0; i < lineNumberToPrint; i++) {
@@ -35,6 +40,4 @@ int myHead(char * option1, char * option2, char * file) {
     }
 
     fclose(fp);
-
-    return 1;
 }

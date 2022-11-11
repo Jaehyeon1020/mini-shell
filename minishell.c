@@ -61,16 +61,31 @@ void eval(char *cmdline)
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
     pid_t pid;           /* Process id */
+    int argc = 0;
+
+    /* argv 널포인터로 초기화 */
+    for (int i = 0; i < MAXARGS; i++) {
+        argv[i] = NULL;
+    }
     
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
+
+    /* 인자 개수 구하기 */
+    for (int i = 0; i < MAXARGS; i++) {
+        if (argv[i] != NULL) {
+            argc += 1;
+        } else {
+            break;
+        }
+    }
 
     /* Ignore empty lines */
     if (argv[0] == NULL)
 	return;
 
     /* builtin command가 아닌 경우 */
-    /* 만약 builtin_command라면 if문 내부로 진입은 안되지만 커맨드 실행은 됨 (builtin_command 호출로 인해서)*/
+    /* 만약 builtin_command라면 if문 내부로 진입은 안되지만 커맨드 실행은 됨 (builtin_command 호출) */
     if (!builtin_command(argv)) { 
         /* Child runs user job */
         if ((pid = fork()) == 0) {
@@ -79,20 +94,84 @@ void eval(char *cmdline)
             strcat(pathSub, argv[0]);
             strcat(pathSub2, argv[0]);
 
-            // 경로가 /bin 인 경우
+            // 구현 필요 없는 명령어들 실행: 경로가 /bin 인 경우
             if (strcmp(argv[0], "ls") == 0 || strcmp(argv[0], "grep") == 0) {
                 if (execv(pathSub, argv) < 0) {
                 fprintf(stderr,"%s: Command not found.\n", argv[0]);
                 exit(0);
                 }
             }
-            // 경로가 /usr/bin 인 경우
+            // 구현 필요 없는 명령어들 실행: 경로가 /usr/bin 인 경우
             else if (strcmp(argv[0], "man") == 0 || strcmp(argv[0], "sort") == 0 || 
                     strcmp(argv[0], "awk") == 0 || strcmp(argv[0], "bc") == 0) {
                 if (execv(pathSub2, argv) < 0) {
                 fprintf(stderr,"%s: Command not found.\n", argv[0]);
                 exit(0);
                 }
+            }
+            // head 명령어 호출
+            else if (strcmp(argv[0], "head") == 0) {
+                // option이 있는 경우
+                if (strcmp(argv[1], "-n")) {
+                    myHead("-n", argv[2], argv[3]);
+                }
+                // option이 없는 경우
+                else {
+                    myHead(NULL, NULL, argv[1]);
+                }
+            }
+            // tail 명령어 호출
+            else if (strcmp(argv[0], "tail") == 0) {
+                /* option 없을 때*/
+                if (argc == 2) {
+                    myTail(NULL, NULL, argv[1]);
+                }
+                /* option 있을 때 */
+                else {
+                    myTail(argv[1], argv[2], argv[3]);
+                }
+            }
+            // cat 명령어 호출
+            else if (strcmp(argv[0], "cat") == 0) {
+                myCat(argv[1]);
+            }
+            // cp 명령어 호출
+            else if (strcmp(argv[0], "cp") == 0) {
+                /* 인자가 입력되지 않는 경우 */
+                if (argc == 1) {
+                    myCp(NULL, NULL);
+                }
+                /* 인자가 1개만 입력된 경우 */
+                else if (argc == 2) {
+                    myCp(argv[1], NULL);
+                }
+                /* 인자가 모두 입력된 경우 */
+                else if (argc == 3) {
+                    myCp(argv[1], argv[2]);
+                }
+            }
+            // mv 명령어 호출
+            else if (strcmp(argv[0], "mv") == 0) {
+                /* 인자가 입력되지 않는 경우 */
+                if (argc == 1) {
+                    myMv(NULL, NULL);
+                }
+                /* 인자가 1개만 입력된 경우 */
+                else if (argc == 2) {
+                    myMv(argv[1], NULL);
+                }
+                /* 인자가 모두 입력된 경우 */
+                else if (argc == 3) {
+                    myMv(argv[1], argv[2]);
+                }
+            }
+            // rm 명령어 호출
+            else if (strcmp(argv[0], "rm") == 0) {
+                myRm(argv[1]);
+            }
+            // pwd 명령어 호출
+            else if (strcmp(argv[0], "pwd") == 0) {
+                myPwd();
             }
         }
 
@@ -118,7 +197,7 @@ int builtin_command(char **argv)
         myCd(argv[1]);
         return 1;
     }
-    else if (strcmp(argv[0], "exit")) {
+    else if (strcmp(argv[0], "exit") == 0) {
         if (argv[1] == NULL) {
             myExit(0);
         }
