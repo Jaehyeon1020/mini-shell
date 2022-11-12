@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include "builtin_cmd.h"
 #include "executable.h"
 
@@ -30,6 +31,9 @@ int main()
 {
     char cmdline[MAXLINE]; /* Command line */
     char *ret;
+
+	signal(SIGINT,SIG_IGN);
+	signal(SIGTSTP,SIG_IGN);
 
     while (1) {
 	/* Read */
@@ -112,12 +116,14 @@ void eval(char *cmdline)
             // head 명령어 호출
             else if (strcmp(argv[0], "head") == 0) {
                 // option이 있는 경우
-                if (strcmp(argv[1], "-n")) {
+                if (strcmp(argv[1], "-n") == 0) {
                     myHead("-n", argv[2], argv[3]);
+                    exit(0);
                 }
                 // option이 없는 경우
                 else {
                     myHead(NULL, NULL, argv[1]);
+                    exit(0);
                 }
             }
             // tail 명령어 호출
@@ -125,29 +131,35 @@ void eval(char *cmdline)
                 /* option 없을 때*/
                 if (argc == 2) {
                     myTail(NULL, NULL, argv[1]);
+                    exit(0);
                 }
                 /* option 있을 때 */
                 else {
                     myTail(argv[1], argv[2], argv[3]);
+                    exit(0);
                 }
             }
             // cat 명령어 호출
             else if (strcmp(argv[0], "cat") == 0) {
                 myCat(argv[1]);
+                exit(0);
             }
             // cp 명령어 호출
             else if (strcmp(argv[0], "cp") == 0) {
                 /* 인자가 입력되지 않는 경우 */
                 if (argc == 1) {
                     myCp(NULL, NULL);
+                    exit(0);
                 }
                 /* 인자가 1개만 입력된 경우 */
                 else if (argc == 2) {
                     myCp(argv[1], NULL);
+                    exit(0);
                 }
                 /* 인자가 모두 입력된 경우 */
                 else if (argc == 3) {
                     myCp(argv[1], argv[2]);
+                    exit(0);
                 }
             }
             // mv 명령어 호출
@@ -155,23 +167,28 @@ void eval(char *cmdline)
                 /* 인자가 입력되지 않는 경우 */
                 if (argc == 1) {
                     myMv(NULL, NULL);
+                    exit(0);
                 }
                 /* 인자가 1개만 입력된 경우 */
                 else if (argc == 2) {
                     myMv(argv[1], NULL);
+                    exit(0);
                 }
                 /* 인자가 모두 입력된 경우 */
                 else if (argc == 3) {
                     myMv(argv[1], argv[2]);
+                    exit(0);
                 }
             }
             // rm 명령어 호출
             else if (strcmp(argv[0], "rm") == 0) {
                 myRm(argv[1]);
+                exit(0);
             }
             // pwd 명령어 호출
             else if (strcmp(argv[0], "pwd") == 0) {
                 myPwd();
+                exit(0);
             }
             // ./ 으로 시작하는 파일 실행
             else if (argv[0][0] == '.' && argv[0][1] == '/') {
