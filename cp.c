@@ -22,7 +22,7 @@ void myCp(char * source, char * destination) {
         exit(1);
     }
 
-    if ((destFd = open(destination, O_WRONLY | O_CREAT | O_TRUNC, 0644)) < 0) {
+    if ((destFd = open(destination, O_WRONLY | O_CREAT, 0644)) < 0) {
         fprintf(stderr, "cp: %s\n", strerror(errno));
         exit(1);
     }
@@ -34,4 +34,22 @@ void myCp(char * source, char * destination) {
 
     close(sourceFd);
     close(destFd);
+}
+
+/* argv[0] : "cp" */
+int main(int argc, char * argv[]) {
+    /* 인자가 입력되지 않는 경우 */
+    if (argc == 2) {
+        myCp(NULL, NULL);
+    }
+    /* 인자가 한개만 입력되는 경우 */
+    else if (argc == 3) {
+        myCp(argv[1], NULL);
+    }
+    /* 모든 인자가 입력되는 경우 */
+    else if (argc == 4) {
+        myCp(argv[1], argv[2]);
+    }
+
+    return 0;
 }

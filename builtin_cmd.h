@@ -8,8 +8,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
-int myCd(const char *path);
+void myCd(const char *path);
 void myExit(int status);
 
 #endif

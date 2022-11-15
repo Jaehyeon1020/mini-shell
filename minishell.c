@@ -27,16 +27,19 @@ void eval(char *cmdline);
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv); 
 
-int main() 
+int main()
 {
     char cmdline[MAXLINE]; /* Command line */
     char *ret;
 
-	signal(SIGINT,SIG_IGN);
-	signal(SIGTSTP,SIG_IGN);
+    signal(SIGINT, SIG_IGN); // SIGINT 무시
+    signal(SIGTSTP, SIG_IGN); // SIGTSTP 무시
 
     while (1) {
 	/* Read */
+    dup2(1, 1); /* redirection 초기화 */
+    dup2(0, 0); /* redirection 초기화 */
+
 	printf("mini> ");                   
 	ret = fgets(cmdline, MAXLINE, stdin); 
 	if (feof(stdin) || ret == NULL)
@@ -59,13 +62,14 @@ int main()
  * 4-2. 구현하지 않은 경우 자식 프로세스를 생성해 해당 프로그램을 실행
  * 5. 자식 프로세스를 생성한 경우 종료될때까지 기다림
  */
-void eval(char *cmdline) 
+void eval(char *cmdline)
 {
     char *argv[MAXARGS]; /* Argument list execve() */
     char buf[MAXLINE];   /* Holds modified command line */
     int bg;              /* Should the job run in bg or fg? */
     pid_t pid;           /* Process id */
     int argc = 0;
+    int redirectionFd; /* 리다이렉션용 fd */
 
     /* argv 널포인터로 초기화 */
     for (int i = 0; i < MAXARGS; i++) {
@@ -93,6 +97,51 @@ void eval(char *cmdline)
     if (!builtin_command(argv)) { 
         /* Child runs user job */
         if ((pid = fork()) == 0) {
+            /* redirection, pipe 한개만 있을 때 테스트용 */
+            for (int i = 0; argv[i] != NULL; i++) {
+                /* output redirection > */
+                if (strcmp(argv[i], ">") == 0)
+                {
+                    if ((redirectionFd = open(argv[i+1], O_WRONLY | O_CREAT)) == -1) {
+                        printf("open failed\n");
+                        exit(1);
+                    }
+                    dup2(redirectionFd, 1);
+
+                    for (int j = i; argv[j] != NULL; j++) {
+                        argv[j] = NULL;
+                    }
+                }
+                /* output redirection >> */
+                else if (strcmp(argv[i], ">>") == 0) {
+                    if ((redirectionFd = open(argv[i+1], O_WRONLY | O_APPEND)) == -1) {
+                        printf("open failed\n");
+                        exit(1);
+                    }
+                    dup2(redirectionFd, 1);
+
+                    for (int j = i; argv[j] != NULL; j++) {
+                        argv[j] = NULL;
+                    }
+                }
+                /* input redirection < */
+                else if (strcmp(argv[i], "<") == 0) {
+                    if ((redirectionFd = open(argv[i+1], O_RDONLY)) == -1) {
+                        printf("mini: No such file or directory\n");
+                        exit(1);
+                    }
+                    dup2(redirectionFd, 0);
+
+                    for (int j = i; argv[j] != NULL; j++) {
+                        argv[j] = NULL;
+                    }
+                }
+                /* pipe */
+                else if (strcmp(argv[i], "|") == 0) {
+                    int pipeFd[2];
+                }
+            } /* redirection end */
+            
             char pathSub[MAXLINE] = "/bin/";
             char pathSub2[MAXLINE] = "/usr/bin/";
             strcat(pathSub, argv[0]);
@@ -115,80 +164,31 @@ void eval(char *cmdline)
             }
             // head 명령어 호출
             else if (strcmp(argv[0], "head") == 0) {
-                // option이 있는 경우
-                if (strcmp(argv[1], "-n") == 0) {
-                    myHead("-n", argv[2], argv[3]);
-                    exit(0);
-                }
-                // option이 없는 경우
-                else {
-                    myHead(NULL, NULL, argv[1]);
-                    exit(0);
-                }
+                execv("head", argv);
             }
             // tail 명령어 호출
             else if (strcmp(argv[0], "tail") == 0) {
-                /* option 없을 때*/
-                if (argc == 2) {
-                    myTail(NULL, NULL, argv[1]);
-                    exit(0);
-                }
-                /* option 있을 때 */
-                else {
-                    myTail(argv[1], argv[2], argv[3]);
-                    exit(0);
-                }
+                execv("tail", argv);
             }
             // cat 명령어 호출
             else if (strcmp(argv[0], "cat") == 0) {
-                myCat(argv[1]);
-                exit(0);
+                execv("cat", argv);
             }
             // cp 명령어 호출
             else if (strcmp(argv[0], "cp") == 0) {
-                /* 인자가 입력되지 않는 경우 */
-                if (argc == 1) {
-                    myCp(NULL, NULL);
-                    exit(0);
-                }
-                /* 인자가 1개만 입력된 경우 */
-                else if (argc == 2) {
-                    myCp(argv[1], NULL);
-                    exit(0);
-                }
-                /* 인자가 모두 입력된 경우 */
-                else if (argc == 3) {
-                    myCp(argv[1], argv[2]);
-                    exit(0);
-                }
+                execv("cp", argv);
             }
             // mv 명령어 호출
             else if (strcmp(argv[0], "mv") == 0) {
-                /* 인자가 입력되지 않는 경우 */
-                if (argc == 1) {
-                    myMv(NULL, NULL);
-                    exit(0);
-                }
-                /* 인자가 1개만 입력된 경우 */
-                else if (argc == 2) {
-                    myMv(argv[1], NULL);
-                    exit(0);
-                }
-                /* 인자가 모두 입력된 경우 */
-                else if (argc == 3) {
-                    myMv(argv[1], argv[2]);
-                    exit(0);
-                }
+                execv("mv", argv);
             }
             // rm 명령어 호출
             else if (strcmp(argv[0], "rm") == 0) {
-                myRm(argv[1]);
-                exit(0);
+                execv("rm", argv);
             }
             // pwd 명령어 호출
             else if (strcmp(argv[0], "pwd") == 0) {
-                myPwd();
-                exit(0);
+                execv("pwd", argv);
             }
             // ./ 으로 시작하는 파일 실행
             else if (argv[0][0] == '.' && argv[0][1] == '/') {
@@ -205,8 +205,10 @@ void eval(char *cmdline)
         /* 백그라운드 작업이 아닌 경우 */
         if (!bg) {
             int status;
-            if (waitpid(pid, &status, 0) < 0)
-                printf("waitfg: waitpid error");
+            if (waitpid(pid, &status, 0) < 0) {
+                printf("waitfg: waitpid error\n");
+                exit(1);
+            }
         }
         else {
             printf("%d %s", pid, cmdline);
@@ -214,7 +216,7 @@ void eval(char *cmdline)
     } // end if (!builtin_command(argv))
 
     return;
-}
+} /* $end eval */
 
 /* If first arg is a builtin command, run it and return true */
 int builtin_command(char **argv)
@@ -234,7 +236,7 @@ int builtin_command(char **argv)
 
     return 0; // return false
 }
-/* $end eval */
+
 
 /* 
  *  $ begin parseline
@@ -277,5 +279,3 @@ int parseline(char *buf, char **argv)
     return bg;
 }
 /* $end parseline */
-
-

@@ -27,6 +27,25 @@ void myTail(char * option1, char * option2, char * file) {
     }
     fseek(fp, 2, SEEK_CUR);
 
+    /* option이 없는 경우 : 10 line 출력 */
+    if (option1 == NULL && option2 == NULL) {
+        for (int i = 0; i < 10; i++) {
+            fgets(buf, BUF_SIZE, fp);
+            printf("%s", buf);
+            
+            /* 앞줄로 이동 */
+            fseek(fp, -2, SEEK_CUR);
+            for (int j = 0; j < 2; j++) {
+                while (strcmp(buf, "\n") != 0) {
+                    fread(buf, sizeof(char), 1, fp);
+                    fseek(fp, -2, SEEK_CUR);
+                }
+                fread(buf, sizeof(char), 1, fp);
+                fseek(fp, -2, SEEK_CUR);
+            }
+        }
+    }
+    
     /* option이 있는 경우: $option2 line 출력 */
     if (strcmp(option1, "-n") == 0) {
         int op2 = atoi(option2);
@@ -47,24 +66,20 @@ void myTail(char * option1, char * option2, char * file) {
             }
         }
     }
-    /* option이 없는 경우 : 10 line 출력 */
-    else {
-        for (int i = 0; i < 10; i++) {
-            fgets(buf, BUF_SIZE, fp);
-            printf("%s", buf);
-            
-            /* 앞줄로 이동 */
-            fseek(fp, -2, SEEK_CUR);
-            for (int j = 0; j < 2; j++) {
-                while (strcmp(buf, "\n") != 0) {
-                    fread(buf, sizeof(char), 1, fp);
-                    fseek(fp, -2, SEEK_CUR);
-                }
-                fread(buf, sizeof(char), 1, fp);
-                fseek(fp, -2, SEEK_CUR);
-            }
-        }
-    }
 
     fclose(fp);
+}
+
+/* argv[0] : "tail" */
+int main(int argc, char * argv[]) {
+    /* option이 있는 경우 */
+    if (argc == 4) {
+        myTail(argv[1], argv[2], argv[3]);
+    }
+    /* option 없는 경우 */
+    else {
+        myTail(NULL, NULL, argv[1]);
+    }
+
+    return 0;
 }
